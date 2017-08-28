@@ -12,7 +12,7 @@
       <li><a class="dropdown-toggle" data-toggle="dropdown" href="#">Categories</a>
         <ul class="dropdown-menu">
           <% for (var i=0; i < categories.length; i++) { %>
-            <li><a><%= categories[i].name %></a></li>
+            <li><a href="/products/<%= categories[i]._id %>"><%= categories[i].name %></a></li>
           <% } %>
         </ul>
       </li>
