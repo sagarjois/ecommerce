@@ -6,6 +6,7 @@ var Product = require('../models/product');
 
 
 router.post('/search', (req, res, next) => {
+    console.log(req.body.search_term);
     Product.search({
         query_string: { query: req.body.search_term }
     }, function(err, results) {
