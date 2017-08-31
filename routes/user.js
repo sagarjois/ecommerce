@@ -1,7 +1,9 @@
 var router = require('express').Router();
 var User = require('../models/user');
+var Cart = require('../models/cart');
 var passport = require('passport');
 var passportConf = require('../config/passport');
+var async = require('async');
 
 router.get('/login', function(req, res) {
     if(req.user) return res.redirect('/');
@@ -28,28 +30,40 @@ router.get('/signup', (req, res, next) => {
 });
 
 router.post('/signup', (req, res, next) => {
-    var user = new User();
 
-    user.profile.name = req.body.name;
-    user.password = req.body.password;
-    user.email = req.body.email;
-    user.profile.picture = user.gravatar();
-
-    User.findOne({ email: req.body.email }, (err, existingUser) => {
-        if(existingUser) {
-            req.flash('errors', 'Account with that email address already exists');
-            return res.redirect('/signup');
-        } else {
-            user.save((err, user) => {
+    async.waterfall([
+        function(callback) {
+            var user = new User();
+            
+                user.profile.name = req.body.name;
+                user.password = req.body.password;
+                user.email = req.body.email;
+                user.profile.picture = user.gravatar();
+            
+                User.findOne({ email: req.body.email }, (err, existingUser) => {
+                    if(existingUser) {
+                        req.flash('errors', 'Account with that email address already exists');
+                        return res.redirect('/signup');
+                    } else {
+                        user.save((err, user) => {
+                            if(err) return next(err);
+                            callback(null, user);
+                        });
+                    }
+                });
+        },
+        function(user) {
+            var cart = new Cart();
+            cart.owner = user._id;
+            cart.save(function(err) {
                 if(err) return next(err);
-
                 req.logIn(user, (err) => {
                     if(err) return next(err);
                     res.redirect('/profile');
                 });
             });
         }
-    });
+    ]);  
 });
 
 router.get('/logout', (req, res, next) => {
