@@ -48,8 +48,22 @@ stream.on('error', function(err) {
     console.log(err);
 });
 
+router.get('/cart',(req, res, next) => {
+    Cart
+        .findOne({ owner: req.user._id })
+        .populate('items.item')
+        .exec((err, foundCart) => {
+            if(err) return next(err);
+            console.log(foundCart);
+            res.render('main/cart', {
+                foundCart
+            });
+        });
+});
+
 router.post('/product/:product_id', (req, res, next) => {
     Cart.findOne({ owner: req.user._id }, (err, cart) => {
+        if(err) return next(err);
         cart.items.push({
             item: req.body.product_id,
             price: parseFloat(req.body.priceValue),
