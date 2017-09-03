@@ -1,6 +1,9 @@
 var router = require('express').Router();
 var Product = require('../models/product');
+var User = require('../models/user');
 var Cart = require('../models/cart');
+var stripe = require('stripe') ('sk_test_YIlfT5aPRwk3jS60MTWcrbwF');
+var async = require('async');
 
 function paginate(req, res, next) {
     var perPage = 9;
@@ -148,6 +151,51 @@ router.get('/product/:id', (req, res, next) => {
             product: product
         });
     });
+});
+
+router.post('/payment', (req, res, next) => {
+    var stripeToken = req.body.stripeToken;
+    var currentCharges = Math.round(req.body.stripeMoney * 100);
+    stripe.customers.create({
+        source: stripeToken,
+    }).then((customer) => {
+        return stripe.charges.create({
+            amount: currentCharges,
+            currency: 'usd',
+            customer: customer.id
+        });
+    }).then((charge) => {
+        async.waterfall([
+            (callback) => {
+                Cart.findOne({ owner: req.user._id }, (err, cart) => {
+                    callback(err, cart);
+                });
+            },
+            (cart, callback) => {
+                User.findOne({ _id: req.user._id }, (err, user) => {
+                    if(user) {
+                        for(var i = 0; i < cart.items.length; i++) {
+                            user.history.push({
+                                item: cart.items[i].item,
+                                paid: cart.items[i].price
+                            });
+                        }
+                        user.save((err, user) => {
+                            if(err) return next(err);
+                            callback(err, user);
+                        });
+                    }
+                });
+            },
+            (user) => {
+                Cart.update({ owner: user._id }, { $set: { items: [], total: 0 }}, (err, updated) => { 
+                    if(updated) {
+                        res.redirect('/profile');
+                    }
+                });
+            }
+        ])
+    })
 });
 
 module.exports = router;
