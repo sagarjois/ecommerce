@@ -56,7 +56,8 @@ router.get('/cart',(req, res, next) => {
             if(err) return next(err);
             console.log(foundCart);
             res.render('main/cart', {
-                foundCart
+                foundCart,
+                message: req.flash('remove')
             });
         });
 });
@@ -75,6 +76,19 @@ router.post('/product/:product_id', (req, res, next) => {
         cart.save((err) => {
             if(err) return next(err);
             return res.redirect('/cart');
+        });
+    });
+});
+
+router.post('/remove', (req, res, next) => {
+    Cart.findOne({ owner: req.user._id }, (err, foundCart) => {
+        foundCart.items.pull(String(req.body.item));
+
+        foundCart.total = (foundCart.total - parseFloat(req.body.price)).toFixed(2);
+        foundCart.save((err, found) => {
+            if(err) return next(err);
+            req.flash('remove', 'Successfully removed');
+            res.redirect('/cart');
         });
     });
 });
