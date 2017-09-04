@@ -16,11 +16,14 @@ router.post('/login', passport.authenticate('local-login', {
     failureFlash: true
 }));
 
-router.get('/profile', (req, res, next) => {
-    User.findOne({_id: req.user._id}, (err, user) => {
-        if(err) return next(err);
-        res.render('accounts/profile', {user});
-    });
+router.get('/profile', passportConf.isAuthenticated, (req, res, next) => {
+    User
+        .findOne({ _id: req.user._id })
+        .populate('history.item')
+        .exec((err, foundUser) => {
+            if(err) return next(err);
+            res.render('accounts/profile', { user: foundUser });
+        });
 });
 
 router.get('/signup', (req, res, next) => {
