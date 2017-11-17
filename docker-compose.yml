@@ -1,0 +1,18 @@
+version: "2"
+services:
+  app:
+    container_name: app
+    restart: always
+    build: .
+    image: node:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/usr/src/app
+    links:
+      - elasticsearch
+  elasticsearch:
+    container_name: elasticsearch
+    image: elasticsearch
+    ports:
+      - "9200:9200"
